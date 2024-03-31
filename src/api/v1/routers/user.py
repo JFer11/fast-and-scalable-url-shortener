@@ -8,7 +8,7 @@ from fastapi_pagination.ext.sqlalchemy import paginate
 from src import models
 from src.api.dependencies import db_session, get_user
 from src.api.v1 import schemas
-from src.api.v1.schemas import Item, Token, UserCreate
+from src.api.v1.schemas import Token, UserCreate
 from src.controllers import UserController
 from src.core.database import Session
 from src.core.security import AuthManager
@@ -39,9 +39,3 @@ def login(
 @router.get("/me", response_model=schemas.User)
 def me(user: models.User = Depends(get_user)) -> Any:
     return user
-
-
-@router.get("/{user_id}/items", response_model=Page[Item])
-def get_public_items(user_id: UUID, session: Session = Depends(db_session)) -> Any:
-    user = models.User.objects(session).get_or_404(models.User.id == user_id)
-    return paginate(session, user.get_public_items())

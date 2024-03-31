@@ -5,7 +5,7 @@ from sqladmin.authentication import AuthenticationBackend
 
 from src.core.database import SessionLocal
 from src.core.security import AuthManager, PasswordManager
-from src.models import Item, User
+from src.models import User, Url
 
 
 class AdminAuth(AuthenticationBackend):
@@ -57,12 +57,13 @@ class UserAdmin(ModelView, model=User):
     column_searchable_list = [User.id, User.email]
 
 
-class ItemAdmin(ModelView, model=Item):
+class UrlAdmin(ModelView, model=Url):
     column_list = [
-        Item.name,
-        Item.description,
-        Item.is_public,
-        Item.owner,
-        Item.created_at,
-        Item.id,
+        Url.original_url,
+        Url.shortened_url,
+        Url.is_active,
+        Url.clicks,
+        Url.owner,
+        Url.created_at,
+        Url.id,
     ]

@@ -41,7 +41,7 @@ case "$1" in
         $DOCKER_COMMAND $DOCKER_COMPOSE_TEST_FILES down
         ;;
     *)
-        echo "Usage: $0 {format|makemigrations|migrate|bash|shell|test}"
+        echo "Usage: $0 {format|makemigrations|migrate|bash|test}"
         exit 1
         ;;
 esac

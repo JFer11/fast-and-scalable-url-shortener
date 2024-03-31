@@ -8,7 +8,7 @@ from sqlalchemy.sql import Select
 from src.core.database import DatedTableMixin, Objects, Session, SQLBase
 
 if typing.TYPE_CHECKING:
-    from src.models import Item, Url
+    from src.models import Url
 
 
 class User(SQLBase, DatedTableMixin):
@@ -16,7 +16,6 @@ class User(SQLBase, DatedTableMixin):
     password: Mapped[str]
     is_active: Mapped[bool] = mapped_column(default=True)
     is_superuser: Mapped[bool] = mapped_column(default=False)
-    items: Mapped[List["Item"]] = relationship("Item", back_populates="owner")
     urls: Mapped[List["Url"]] = relationship("Url", back_populates="owner")
 
     def __str__(self) -> str:
@@ -26,21 +25,9 @@ class User(SQLBase, DatedTableMixin):
     def actives(cls, session: Session) -> Objects["User"]:
         return Objects(cls, session, User.is_active == True)  # noqa: E712
 
-    def get_items(self) -> Select:
-        from src.models import Item
-
-        statement = select(Item).filter(Item.owner_id == self.id)
-        return statement
-
     def get_urls(self, include_deleted : bool) -> Select:
         from src.models import Url
         statement = select(Url).filter(Url.owner_id == self.id)
         if include_deleted:
             return statement
         return statement.filter(Url.is_active == True)
-
-    def get_public_items(self) -> Select:
-        from src.models import Item
-
-        statement = self.get_items().filter(Item.is_public == True)  # noqa: E712
-        return statement

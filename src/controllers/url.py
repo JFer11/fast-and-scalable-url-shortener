@@ -13,7 +13,7 @@ class UrlController:
     @staticmethod
     def create(
         url_data: schemas.UrlCreate, owner_id: UUID, session: Session
-    ) -> models.Item:
+    ) -> models.Url:
         shortened_url = generate_unique_shortened_url(session, url_data.original_url)
         url_data = schemas.Url(
             original_url=url_data.original_url,
@@ -28,7 +28,7 @@ class UrlController:
     @staticmethod
     def deactivate(
         shortened_url: str, owner_id: UUID, session: Session
-    ) -> models.Item:
+    ) -> models.Url:
         url = Url.objects(session).get(Url.shortened_url == shortened_url, Url.owner_id == owner_id, Url.is_active == True)
         if not url:
             raise HTTPException(status_code=404, detail="URL not found or you do not have permission to modify it.")

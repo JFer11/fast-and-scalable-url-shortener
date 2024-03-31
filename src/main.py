@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_pagination import add_pagination
 from sqladmin import Admin
 
-from src.admin import AdminAuth, ItemAdmin, UserAdmin
+from src.admin import AdminAuth, UserAdmin, UrlAdmin
 from src.core.config import settings
 from src.core.database import engine
 from src.logging import LogConfig
@@ -35,4 +35,4 @@ authentication_backend = AdminAuth(secret_key="")
 admin = Admin(app=app, engine=engine, authentication_backend=authentication_backend)
 
 admin.add_view(UserAdmin)
-admin.add_view(ItemAdmin)
+admin.add_view(UrlAdmin)
