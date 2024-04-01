@@ -20,9 +20,10 @@ router = APIRouter()
 def signup(
     response: Response,
     user_data: UserCreate,
+    superuser: bool = False,
     session: Session = Depends(db_session),
 ) -> Token | None:
-    user = UserController.create(user_data=user_data, session=session)
+    user = UserController.create(user_data=user_data, session=session, is_superuser=superuser)
     return AuthManager.process_login(user=user, response=response)
 
 

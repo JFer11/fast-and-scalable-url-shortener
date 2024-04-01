@@ -8,13 +8,14 @@ from src.models import User
 
 class UserController:
     @staticmethod
-    def create(user_data: UserCreate, session: Session) -> User:
+    def create(user_data: UserCreate, session: Session, is_superuser: bool = False) -> User:
         user = User.objects(session).get(User.email == user_data.email)
         if user:
             raise HTTPException(status_code=409, detail="Email address already in use")
+        user_dict = user_data.dict()
         hashed_password = PasswordManager.get_password_hash(user_data.password)
-        user_data.password = hashed_password
-        user = User.objects(session).create(user_data.dict())
+        user_dict.update({"password": hashed_password, "is_superuser": is_superuser})
+        user = User.objects(session).create(user_dict)
         return user
 
     @staticmethod
