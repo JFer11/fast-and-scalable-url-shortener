@@ -36,10 +36,11 @@ def get_shortened_url_data(
 @router.post("", response_model=Url, status_code=status.HTTP_201_CREATED)
 def create_shortened_url(
     url_data: UrlCreate,
+    alias: str | None = None,
     user: User = Depends(get_user),
     session: Session = Depends(db_session),
 ) -> Any:
-    return UrlController.create(url_data=url_data, owner_id=user.id, session=session)
+    return UrlController.create(url_data=url_data, owner_id=user.id, alias=alias, session=session)
 
 
 @router.delete("/{shortened_url}", response_model=Url, status_code=status.HTTP_202_ACCEPTED)

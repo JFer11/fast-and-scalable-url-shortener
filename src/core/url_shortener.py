@@ -6,11 +6,12 @@ from fastapi import HTTPException, status
 from src.models import Url
 from src.core.database import Session
 
+ALLOWED_URL_LENTGH = 7
+ALLOWED_CHARACTERS = string.ascii_letters + string.digits
+
 
 def check_shortened_url_exists(session: Session, shortened_url: str) -> bool:
-    if Url.objects(session).get(Url.shortened_url == shortened_url):
-        return True
-    return False
+    return Url.objects(session).get(Url.shortened_url == shortened_url) is not None
 
 
 def base62_encode(num: int, characters: str) -> str:
@@ -46,11 +47,17 @@ def create_hashed_url_variant(original_url: str, attempt: int, characters: str) 
     return base62_encode(num, characters)
 
 
-def generate_unique_shortened_url(session: Session, original_url: str, length: int = 7, max_retries: int = 10) -> str:
-    characters = string.ascii_letters + string.digits
+def generate_unique_shortened_url(session: Session, original_url: str, length: int = ALLOWED_URL_LENTGH, max_retries: int = 10) -> str:
     for attempt in range(max_retries):
-        hashed_url_variant = create_hashed_url_variant(original_url, attempt, characters)
+        hashed_url_variant = create_hashed_url_variant(original_url, attempt, ALLOWED_CHARACTERS)
         shortened_fixed_length = str(hashed_url_variant[:length])
         if not check_shortened_url_exists(session, shortened_fixed_length):
             return shortened_fixed_length
     raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Failed to generate a unique shortened URL after multiple attempts.")
+
+
+def ensure_valid_and_unique_alias(alias: str, session: Session) -> None:
+    if len(alias) < ALLOWED_URL_LENTGH or not all(char in ALLOWED_CHARACTERS for char in alias):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Alias must be at least 7 characters long and only contain alphanumeric characters.")
+    if check_shortened_url_exists(session, alias):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="The provided alias is already in use.")

@@ -66,6 +66,34 @@ class TestCreateUrl(TestURL):
         response = client.post(self.URL_ENDPOINT, json={"original_url": self.INVALID_URL})
         assert response.status_code == 422
         assert "detail" in response.json()
+        
+    def test_create_shortened_url_with_custom_alias(self):
+        custom_alias = "zapiaai"
+        response = client.post(self.URL_ENDPOINT, params={"alias": custom_alias}, json={"original_url": self.VALID_URL})
+        assert response.status_code == 201
+        data = response.json()
+        assert data["shortened_url"] == custom_alias
+
+    def test_create_shortened_url_with_duplicate_alias(self):
+        custom_alias = "zapiaai"
+        client.post(self.URL_ENDPOINT, params={"alias": custom_alias}, json={"original_url": self.VALID_URL})
+        response_duplicated_alias = client.post(self.URL_ENDPOINT, params={"alias": custom_alias}, json={"original_url": self.VALID_URL + "/dup"})
+        assert response_duplicated_alias.status_code == 409
+        assert "detail" in response_duplicated_alias.json()
+        assert response_duplicated_alias.json()["detail"] == "The provided alias is already in use."
+
+    @pytest.mark.parametrize(
+        "invalid_alias",
+        [
+            "little",  # Invalid because the alias is too short. Aliases must be at least 7 characters long.
+            "!nv@lid",  # Invalid because of special characters. Only alphanumeric characters are allowed.
+        ]
+    )
+    def test_create_shortened_url_with_invalid_aliases(self, invalid_alias):
+        response = client.post(self.URL_ENDPOINT, params={"alias": invalid_alias}, json={"original_url": self.VALID_URL})
+        assert response.status_code == 400
+        assert "detail" in response.json()
+        assert response.json()["detail"] == "Alias must be at least 7 characters long and only contain alphanumeric characters."
 
 
 class TestRetrieveUrlData(TestURL):

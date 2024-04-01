@@ -6,15 +6,19 @@ from src import models
 from src.api.v1 import schemas
 from src.core.database import Session
 from src.models import Url
-from src.core.url_shortener import generate_unique_shortened_url
+from src.core.url_shortener import ensure_valid_and_unique_alias, generate_unique_shortened_url
 
 
 class UrlController:
     @staticmethod
     def create(
-        url_data: schemas.UrlCreate, owner_id: UUID, session: Session
+        url_data: schemas.UrlCreate, owner_id: UUID, alias: str | None, session: Session
     ) -> models.Url:
-        shortened_url = generate_unique_shortened_url(session, url_data.original_url)
+        if alias:
+            ensure_valid_and_unique_alias(alias, session)
+            shortened_url = alias
+        else: 
+            shortened_url = generate_unique_shortened_url(session, url_data.original_url)
         url_data = schemas.Url(
             original_url=url_data.original_url,
             shortened_url=shortened_url,
