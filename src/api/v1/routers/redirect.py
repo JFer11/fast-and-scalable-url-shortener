@@ -21,4 +21,4 @@ def redirect(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found.")
     url.clicks += 1
     session.commit()
-    return RedirectResponse(url.original_url)
+    return RedirectResponse(url.original_url, status_code=status.HTTP_302_FOUND)

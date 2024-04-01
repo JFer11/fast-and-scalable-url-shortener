@@ -42,7 +42,7 @@ def create_shortened_url(
     return UrlController.create(url_data=url_data, owner_id=user.id, session=session)
 
 
-@router.delete("", response_model=Url, status_code=status.HTTP_202_ACCEPTED)
+@router.delete("/{shortened_url}", response_model=Url, status_code=status.HTTP_202_ACCEPTED)
 def delete_shortened_url(
     shortened_url : str,
     user: User = Depends(get_user),

@@ -8,7 +8,7 @@ from pydantic.datetime_parse import parse_datetime
 from src.core.config import settings
 from src.core.security import AuthManager, PasswordManager
 from src.models import User
-from src.tests.base import BASE_URL, TestingSessionLocal, client, reset_database
+from src.tests.base import BASE_URL, TestingSessionLocal, client
 
 
 class TestUser:
@@ -45,7 +45,6 @@ class TestUser:
         assert data["is_active"] == True  # noqa: E712
         assert data["is_superuser"] == False  # noqa: E712
 
-    @reset_database
     def test_signup(self) -> None:
         expected_expire = datetime.utcnow() + timedelta(
             minutes=settings.access_token_expire_minutes
@@ -63,7 +62,6 @@ class TestUser:
         response = client.post(self.SIGNUP_URL)
         assert response.status_code == 422
 
-    @reset_database
     def test_signup_dup_emails(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         response = client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
@@ -71,7 +69,6 @@ class TestUser:
         data = response.json()
         assert data["detail"] == "Email address already in use"
 
-    @reset_database
     def test_login(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         expected_expire = datetime.utcnow() + timedelta(
@@ -90,19 +87,16 @@ class TestUser:
         response = client.post(self.LOGIN_URL)
         assert response.status_code == 422
 
-    @reset_database
     def test_login_fail(self) -> None:
         response = client.post(self.LOGIN_URL, json=self.TEST_PAYLOAD)
         self.check_login_fail(response=response)
 
-    @reset_database
     def test_login_bad_password(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         payload = {"email": self.TEST_EMAIL, "password": "oops"}
         response = client.post(self.LOGIN_URL, json=payload)
         self.check_login_fail(response=response)
 
-    @reset_database
     def test_me_header(self) -> None:
         sign_up_resp = client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         data = sign_up_resp.json()
@@ -111,18 +105,15 @@ class TestUser:
         response = client.get(self.ME_URL, headers={AuthManager.header_name: token})
         self.check_me_response(response=response)
 
-    @reset_database
     def test_me_cookie(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         response = client.get(self.ME_URL)
         self.check_me_response(response=response)
-
-    @reset_database
+    
     def test_me_unauthenticated(self) -> None:
         response = client.get(self.ME_URL)
         assert response.status_code == 401
 
-    @reset_database
     def test_me_bad_access_token(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         client.cookies.clear()
@@ -130,8 +121,7 @@ class TestUser:
             self.ME_URL, headers={AuthManager.header_name: self.BAD_TOKEN}
         )
         assert response.status_code == 401
-
-    @reset_database
+ 
     def test_me_bad_cookie(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         client.cookies.clear()
@@ -139,7 +129,7 @@ class TestUser:
         response = client.get(self.ME_URL)
         assert response.status_code == 401
 
-    @reset_database
+    
     def test_expired_token(self) -> None:
         client.post(self.SIGNUP_URL, json=self.TEST_PAYLOAD)
         time.sleep(3)

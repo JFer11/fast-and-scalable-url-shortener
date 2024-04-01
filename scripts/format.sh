@@ -1,7 +1,5 @@
 #!/bin/bash
 
-printf "Runing pycln...\n"
-pycln src --exclude __init__.py --all
 printf "\nRunning isort...\n"
 isort src
 printf "\nRunning flake8...\n"
