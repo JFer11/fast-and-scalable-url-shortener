@@ -12,7 +12,36 @@ services:
     tty: true
     depends_on:
       - db
+      - redis
+      - rabbitmq
+
   db:
     image: postgres:15.3
     ports:
       - 127.0.0.1:5432:5432
+
+  redis:
+    image: redis:7.2.4
+    ports:
+      - 6379:6379
+
+  rabbitmq:
+    image: rabbitmq:3.12.13-alpine
+    ports:
+      - 127.0.0.1:5673:5672
+    environment:
+      RABBITMQ_DEFAULT_VHOST: vhost
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+
+  celery_worker:
+    build: .
+    command: celery -A src.celery.worker worker --loglevel=info
+    env_file: .env
+    volumes:
+      - .:/backend
+    stdin_open: true
+    tty: true
+    depends_on:
+      - db
+      - rabbitmq

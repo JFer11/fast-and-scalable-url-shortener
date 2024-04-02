@@ -12,10 +12,14 @@ class LogLevel(str, Enum):
 
 
 class Settings(BaseSettings):
+    # TODO: Pollish this into a better .env file
     database_url: PostgresDsn
     test_database_url: PostgresDsn | None
     log_level: LogLevel = LogLevel.debug
     server_url: str
+    redis_host: str = "127.0.0.1"
+    redis_port: int = 6379
+    celery_broker_url: str = 'amqp://guest:guest@rabbitmq:5672/vhost'
 
     # Auth
     access_token_expire_minutes: float

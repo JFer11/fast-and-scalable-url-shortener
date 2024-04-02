@@ -3,8 +3,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi_pagination import Page
 from fastapi_pagination.ext.sqlalchemy import paginate
+from redis.asyncio import Redis
 
-from src.api.dependencies import db_session, get_user
+from src.api.dependencies import db_session, get_redis, get_user
 from src.api.v1.schemas import Url, UrlCreate
 from src.controllers import UrlController
 from src.core.database import Session
@@ -44,11 +45,12 @@ def create_shortened_url(
 
 
 @router.delete("/{shortened_url}", response_model=Url, status_code=status.HTTP_202_ACCEPTED)
-def delete_shortened_url(
+async def delete_shortened_url(
     shortened_url : str,
     user: User = Depends(get_user),
+    redis: Redis = Depends(get_redis),
     session: Session = Depends(db_session),
 ) -> Any:
-    return UrlController.deactivate(shortened_url=shortened_url, owner_id=user.id, session=session)
-
-
+    url = UrlController.deactivate(shortened_url=shortened_url, owner_id=user.id, session=session)
+    await redis.delete(f"url:{shortened_url}")
+    return url

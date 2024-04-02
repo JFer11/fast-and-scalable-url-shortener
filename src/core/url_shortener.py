@@ -8,6 +8,7 @@ from src.core.database import Session
 
 ALLOWED_URL_LENTGH = 7
 ALLOWED_CHARACTERS = string.ascii_letters + string.digits
+MAX_RETRIES = 10
 
 
 def check_shortened_url_exists(session: Session, shortened_url: str) -> bool:
@@ -47,7 +48,7 @@ def create_hashed_url_variant(original_url: str, attempt: int, characters: str) 
     return base62_encode(num, characters)
 
 
-def generate_unique_shortened_url(session: Session, original_url: str, length: int = ALLOWED_URL_LENTGH, max_retries: int = 10) -> str:
+def generate_unique_shortened_url(session: Session, original_url: str, length: int = ALLOWED_URL_LENTGH, max_retries: int = MAX_RETRIES) -> str:
     for attempt in range(max_retries):
         hashed_url_variant = create_hashed_url_variant(original_url, attempt, ALLOWED_CHARACTERS)
         shortened_fixed_length = str(hashed_url_variant[:length])

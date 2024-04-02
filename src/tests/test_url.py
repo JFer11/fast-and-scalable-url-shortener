@@ -171,8 +171,14 @@ class TestDeleteUrl(TestURL):
             url = Url.objects(session).get(Url.shortened_url == short_url)
             assert url.is_active == False
 
-    def test_deactivate_shortened_url_twice(self):
-        ...
+    def test_try_deactivate_shortened_url_twice(self):
+        short_url = self.create_url()
+        first_deactivate_response = client.delete(f"{self.URL_ENDPOINT}/{short_url}")
+        assert first_deactivate_response.status_code == 202
+        second_deactivate_response = client.delete(f"{self.URL_ENDPOINT}/{short_url}")
+        assert second_deactivate_response.status_code == 404
+        assert "detail" in second_deactivate_response.json()
+        assert self.ERROR_MESSAGE in second_deactivate_response.json()["detail"]
 
     def test_unauthorized_url_deactivation(self):
         short_url = self.create_url()
@@ -188,7 +194,7 @@ class TestDeleteUrl(TestURL):
 class TestRedirectUrl(TestURL):
     ERROR_MESSAGE = "URL not found."
     
-    def test_redirect_to_original_url(self):
+    def test_redirect_to_original_url(self, mock_increment_click_count):
         short_url = self.create_url()
         response = client.get(f"{self.REDIRECT_ENDPOINT}/{short_url}", follow_redirects=False)
         assert response.status_code == 302
@@ -208,7 +214,7 @@ class TestRedirectUrl(TestURL):
         assert "detail" in response.json()
         assert response.json()["detail"] == self.ERROR_MESSAGE
         
-    def test_increment_click_on_redirect_to_original_url(self):
+    def test_increment_click_on_redirect_to_original_url(self, mock_increment_click_count):
         short_url = self.create_url()
         client.get(f"{self.REDIRECT_ENDPOINT}/{short_url}", follow_redirects=False)
         with TestingSessionLocal() as session:
@@ -217,7 +223,7 @@ class TestRedirectUrl(TestURL):
 
 
 class TestURLIntegration(TestURL):
-    def test_url_lifecycle(self):
+    def test_url_lifecycle(self, mock_increment_click_count):
         """
         Test the complete lifecycle of a URL: creation, retrieval,
         redirection, verifying click count, deactivation, and access post-deactivation.
