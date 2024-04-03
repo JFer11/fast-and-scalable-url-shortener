@@ -5,6 +5,7 @@ import redis.asyncio as redis
 
 from src.core.database import Session, SessionLocal
 from src.core.security import AuthManager
+from src.core.config import settings
 from src.models import User
 
 
@@ -17,7 +18,7 @@ def db_session() -> Iterator[Session]:
 
 
 async def get_redis():
-    redis_ = redis.Redis.from_url("redis://redis:6379", encoding="utf-8", decode_responses=True)
+    redis_ = redis.Redis.from_url(f"redis://{settings.redis_host}:{settings.redis_port}", encoding="utf-8", decode_responses=True)
     try:
         yield redis_
     finally:

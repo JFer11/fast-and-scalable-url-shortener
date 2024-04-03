@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+
   backend:
     build: .
     ports:
@@ -23,16 +24,16 @@ services:
   redis:
     image: redis:7.2.4
     ports:
-      - 6379:6379
+      - 127.0.0.1:${REDIS_PORT}:${REDIS_PORT}
 
   rabbitmq:
     image: rabbitmq:3.12.13-alpine
     ports:
-      - 127.0.0.1:5673:5672
+      - 127.0.0.1:${RABBITMQ_PORT}:${RABBITMQ_PORT}
     environment:
-      RABBITMQ_DEFAULT_VHOST: vhost
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_DEFAULT_VHOST}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
 
   celery_worker:
     build: .

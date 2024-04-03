@@ -7,10 +7,11 @@ from redis import Redis
 from src.celery.tasks import increment_click_count
 from src.core.database import SQLBase
 from src.core.security import AuthManager
+from src.core.config import settings
 from src.models.url import Url
 from src.tests.base import engine, client, TestingSessionLocal
 
-redis_ = Redis.from_url("redis://redis:6379", encoding="utf-8", decode_responses=True)
+redis_ = Redis.from_url(f"redis://{settings.redis_host}:{settings.redis_port}", encoding="utf-8", decode_responses=True)
 
 
 @pytest.fixture(autouse=True)
