@@ -3,9 +3,8 @@ from typing import List
 
 from sqlalchemy import select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.sql import Select
 
-from src.core.database import DatedTableMixin, Objects, Session, SQLBase
+from src.core.database import DatedTableMixin, Objects, AsyncSession, SQLBase
 
 if typing.TYPE_CHECKING:
     from src.models import Url
@@ -22,12 +21,15 @@ class User(SQLBase, DatedTableMixin):
         return self.email
 
     @classmethod
-    def actives(cls, session: Session) -> Objects["User"]:
+    async def actives(cls, session: AsyncSession) -> Objects["User"]:
         return Objects(cls, session, User.is_active == True)  # noqa: E712
 
-    def get_urls(self, include_deleted : bool) -> Select:
+    async def get_urls(self, session: AsyncSession, include_deleted: bool = False) -> List["Url"]:
         from src.models import Url
-        statement = select(Url).filter(Url.owner_id == self.id)
-        if include_deleted:
-            return statement
-        return statement.filter(Url.is_active == True)
+
+        statement = select(Url).where(Url.owner_id == self.id)
+        if not include_deleted:
+            statement = statement.where(Url.is_active == True)
+        result = await session.execute(statement)
+        urls = result.scalars().all()
+        return urls

@@ -3,9 +3,13 @@ from fastapi.responses import RedirectResponse
 from sqladmin import ModelView
 from sqladmin.authentication import AuthenticationBackend
 
-from src.core.database import SessionLocal
+from src.core.database import AsyncSessionLocal
 from src.core.security import AuthManager, PasswordManager
 from src.models import User, Url
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AdminAuth(AuthenticationBackend):
@@ -14,8 +18,8 @@ class AdminAuth(AuthenticationBackend):
     async def login(self, request: Request) -> bool:
         form = await request.form()
         email, password = form["username"], form["password"]
-        with SessionLocal() as session:
-            user = User.objects(session).get(User.email == email)
+        async with AsyncSessionLocal() as session:
+            user = await User.objects(session).get(User.email == email)
         if not user or not user.is_superuser:
             return False
         if not PasswordManager.verify_password(password, user.password):  # type: ignore[arg-type]
@@ -37,15 +41,14 @@ class AdminAuth(AuthenticationBackend):
         if not token:
             return failed_auth_response
         try:
-            session = SessionLocal()
-            user = manager.get_user_from_token(token=token, session=session)
+            async with AsyncSessionLocal() as session:
+                user = await manager.get_user_from_token(token=token, session=session)
         except Exception:
             return failed_auth_response
-        finally:
-            session.close()
         if not user.is_superuser:
             return failed_auth_response
         return None
+
 
 
 class UserAdmin(ModelView, model=User):
@@ -53,6 +56,8 @@ class UserAdmin(ModelView, model=User):
         User.email,
         User.created_at,
         User.id,
+        User.password,
+        User.is_superuser,
     ]
     column_searchable_list = [User.id, User.email]
 
@@ -65,5 +70,6 @@ class UrlAdmin(ModelView, model=Url):
         Url.clicks,
         Url.owner,
         Url.created_at,
+        Url.updated_at,
         Url.id,
     ]

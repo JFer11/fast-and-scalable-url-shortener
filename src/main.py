@@ -7,7 +7,7 @@ from sqladmin import Admin
 
 from src.admin import AdminAuth, UserAdmin, UrlAdmin
 from src.core.config import settings
-from src.core.database import engine
+from src.core.database import async_engine
 from src.logging import LogConfig
 from src.urls import router
 
@@ -32,7 +32,7 @@ app.add_middleware(
 add_pagination(app)
 
 authentication_backend = AdminAuth(secret_key="")
-admin = Admin(app=app, engine=engine, authentication_backend=authentication_backend)
+admin = Admin(app=app, engine=async_engine, authentication_backend=authentication_backend)
 
 admin.add_view(UserAdmin)
 admin.add_view(UrlAdmin)

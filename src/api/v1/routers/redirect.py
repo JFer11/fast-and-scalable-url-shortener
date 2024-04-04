@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 from redis.asyncio import Redis
 
 from src.api.dependencies import db_session, get_redis
-from src.core.database import Session
+from src.core.database import AsyncSession
 from src.models import Url
 from src.celery.tasks import increment_click_count
 
@@ -19,13 +19,13 @@ router = APIRouter()
 async def redirect(
     shortened_url: str,
     redis: Redis = Depends(get_redis),
-    session: Session = Depends(db_session)
+    session: AsyncSession = Depends(db_session)
 ) -> RedirectResponse:
     logger.info(f"Retrieving original URL for shortened URL '{shortened_url}' from Redis cache.")  # Log Redis retrieval for demo purposes, showcasing cache usage.
     original_url = await redis.get(f"url:{shortened_url}")
     if original_url is None:
         logger.info(f"Original URL for shortened URL '{shortened_url}' not found in Redis cache. Attempting to retrieve from database.")  # Log Redis retrieval for demo purposes, showcasing cache usage.
-        url = Url.objects(session).get(Url.shortened_url == shortened_url, Url.is_active == True)
+        url = await Url.objects(session).get(Url.shortened_url == shortened_url, Url.is_active == True)
         if not url:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found.")
         original_url = url.original_url

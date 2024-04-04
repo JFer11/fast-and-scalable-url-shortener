@@ -3,11 +3,11 @@ from datetime import datetime
 from typing import Any, Dict, Generic, Sequence, Type, TypeVar
 
 from fastapi import HTTPException
-from sqlalchemy import create_engine, func, select
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import func, select
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
-    Session,
     declarative_mixin,
     declared_attr,
     mapped_column,
@@ -19,8 +19,15 @@ from src.core.config import settings
 from src.helpers.casing import snakecase
 from src.helpers.sql import random_uuid, utcnow
 
-engine = create_engine(settings.database_url)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+async_engine = create_async_engine(settings.database_url, echo=True)
+AsyncSessionLocal = sessionmaker(
+    bind=async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autoflush=False,
+    autocommit=False,
+)
 
 
 class SQLBase(DeclarativeBase):
@@ -31,7 +38,7 @@ class SQLBase(DeclarativeBase):
         return snakecase(cls.__name__)
 
     @classmethod
-    def objects(cls: Type["_Model"], session: Session) -> "Objects[_Model]":
+    def objects(cls: Type["_Model"], session: AsyncSession) -> "Objects[_Model]":
         return Objects(cls, session)
 
 
@@ -40,14 +47,14 @@ _Model = TypeVar("_Model", bound=SQLBase)
 
 class Objects(Generic[_Model]):
     cls: Type[_Model]
-    session: Session
+    session: AsyncSession
     base_statement: Select
     queryset_filters: Any = None
 
     def __init__(
         self,
         cls: Type[_Model],
-        session: Session,
+        session: AsyncSession,
         *queryset_filters: Any,
     ) -> None:
         self.cls = cls
@@ -58,39 +65,42 @@ class Objects(Generic[_Model]):
             base_statement = base_statement.where(*queryset_filters)
         self.base_statement = base_statement
 
-    def all(self) -> Sequence[_Model]:
-        return self.session.execute(self.base_statement).scalars().unique().all()
+    async def all(self) -> Sequence[_Model]:
+        result = await self.session.execute(self.base_statement)
+        return result.scalars().unique().all()
 
-    def get(self, *where_clause: Any) -> _Model | None:
+    async def get(self, *where_clause: Any) -> _Model | None:
         statement = self.base_statement.where(*where_clause)
-        return self.session.execute(statement).unique().scalar_one_or_none()
+        result = await self.session.execute(statement)
+        return result.scalars().unique().one_or_none()
 
-    def get_or_404(self, *where_clause: Any) -> _Model:
-        obj = self.get(*where_clause)
+    async def get_or_404(self, *where_clause: Any) -> _Model:
+        obj = await self.get(*where_clause)
         if obj is None:
             raise HTTPException(
                 status_code=404, detail=f"{self.cls.__name__} not found"
             )
         return obj
 
-    def get_all(self, *where_clause: Any) -> Sequence[_Model]:
+    async def get_all(self, *where_clause: Any) -> Sequence[_Model]:
         statement = self.base_statement.where(*where_clause)
-        return self.session.execute(statement).scalars().unique().all()
+        result = await self.session.execute(statement)
+        return result.scalars().unique().all()
 
-    def count(self, *where_clause: Any) -> int:
+    async def count(self, *where_clause: Any) -> int:
         statement = select(func.count()).select_from(self.cls)
         if self.queryset_filters:
             statement = statement.where(*self.queryset_filters)
         if where_clause:
             statement = statement.where(*where_clause)
+        result = await self.session.execute(statement)
+        return result.scalar_one()
 
-        return self.session.execute(statement).scalar_one()
-
-    def create(self, data: Dict[str, Any]) -> _Model:
+    async def create(self, data: Dict[str, Any]) -> _Model:
         obj = self.cls(**data)
         self.session.add(obj)
-        self.session.commit()
-        self.session.refresh(obj)
+        await self.session.commit()
+        await self.session.refresh(obj)
         return obj
 
 

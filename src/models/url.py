@@ -15,7 +15,7 @@ class Url(SQLBase, DatedTableMixin):
     shortened_url: Mapped[str] = mapped_column(unique=True, index=True)
     is_active: Mapped[bool] = mapped_column(default=True)
     clicks: Mapped[int] = mapped_column(default=0)
-    owner_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"))
+    owner_id: Mapped[UUID] = mapped_column(ForeignKey("user.id"), index=True)
     owner: Mapped["User"] = relationship("User", back_populates="urls")
 
     __table_args__ = (CheckConstraint('clicks >= 0', name='clicks_positive'),)
