@@ -19,6 +19,8 @@ It allows users to convert **long URLs into shortened versions** for easier shar
   - [Confirming the Setup](#confirming-the-setup)
   - [Accessing the API Documentation](#accessing-the-api-documentation)
 - [Database Migrations 🗃️](#database-migrations-️)
+- [SQL Admin Interface 🔐](#sql-admin-interface-)
+  - [Accessing SQL Admin:](#accessing-sql-admin)
 - [Code Quality Tools 🔍](#code-quality-tools-)
   - [Simplifying Code Quality Management](#simplifying-code-quality-management)
 - [Testing Approach 🧪](#testing-approach-)
@@ -138,6 +140,44 @@ To facilitate ease of use and integration within our Dockerized environment, we 
   ./scripts/exec.sh makemigrations
   ```
 
+## SQL Admin Interface 🔐
+
+The URL Shortener Service incorporates an intuitive SQL Admin interface, enhancing the management of database entities directly through a web-based dashboard. Leveraging [SQLAdmin](https://github.com/aminalaee/sqladmin), a flexible administration panel designed for FastAPI applications using SQLAlchemy, this interface offers a user-friendly environment for administrative tasks.
+
+**Note**: *You should be careful when adding relationships to the list or detail pages (specially large many-to-many / one-to-many relationships), because it's not very optimal in terms of DB querys in those cases (all the related objects would be loaded in memory).*
+
+### Accessing SQL Admin:
+
+To securely access the SQL Admin dashboard, authentication as a superuser is required. Follow these streamlined steps:
+
+1. **Creating a Superuser**: Initially, create a superuser account. This grants the necessary administrative privileges for SQL Admin access. This can be conveniently done through the Swagger UI available at `localhost:8000/docs`, where the signup endpoint includes a `superuser` flag, set to `false` by default. Toggle this to `true` when creating a superuser.
+    
+```http
+POST /signup
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "securepassword",
+  "superuser": true
+}
+```
+
+1. **Authentication**: After creating a superuser account, authenticate by logging in. This step verifies your credentials and grants access to SQL Admin functionalities.
+
+    Example login request, also performed through Swagger UI:
+    ```http
+    POST /login
+    Content-Type: application/json
+
+    {
+      "email": "admin@example.com",
+      "password": "securepassword"
+    }
+    ```
+
+2. **Dashboard Access**: With your superuser account created, proceed to the SQL Admin dashboard by visiting `localhost:8000/admin` in your web browser and submit the superuser credentials here.
+
 ## Code Quality Tools 🔍
 
 To maintain high standards of code quality, several tools are utilized to ensure the codebase remains clean, efficient, and adherent to best practices:
@@ -158,7 +198,17 @@ The execution of these tools has been simplified into a single script, eliminati
 
 ## Testing Approach 🧪
 
-The testing framework integrates `pytest-asyncio` for asynchronous testing, combined with `AsyncClient` from `httpx` for API request simulations. This configuration enables comprehensive testing of the service’s asynchronous operations and endpoint behaviors. To execute the test suite:
+The testing framework capitalizes on the power of `pytest-asyncio` for its asynchronous testing capabilities, alongside `AsyncClient` from `httpx` to simulate API requests accurately. This setup ensures a thorough evaluation of the service's asynchronous operations and its response to various endpoint requests, mirroring real-world usage scenarios as closely as possible.
+
+Before initiating the test suite, it's crucial to halt any running instances of the service to prevent conflicts caused by Docker Compose's override mechanism. Follow these steps to prepare your environment for testing:
+
+1. **Stop Running Containers**: If any service containers are currently active, they need to be stopped. This ensures that the testing environment starts afresh, without interference from lingering processes.
+  
+```bash
+docker-compose down
+```
+   
+2. **Execute the Test Suite**: With the environment prepared and containers stopped, you can proceed to run the test suite. This command executes all defined tests, verifying the integrity and reliability of the service:
 
 ```bash
 ./scripts/exec.sh test
